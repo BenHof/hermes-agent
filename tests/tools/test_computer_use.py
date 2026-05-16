@@ -657,6 +657,42 @@ class TestRunAgentMultimodalHelpers:
 # Universality: does the schema work without Anthropic?
 # ---------------------------------------------------------------------------
 
+class TestCuaDriverBackend:
+    def test_type_text_falls_back_when_type_text_chars_is_unknown_tool(self):
+        from tools.computer_use.backend import ActionResult
+        from tools.computer_use.cua_backend import CuaDriverBackend
+
+        backend = object.__new__(CuaDriverBackend)
+        backend._active_pid = 123
+        backend._active_window_id = 456
+
+        calls = []
+
+        def fake_action(name, args):
+            calls.append((name, args))
+            if name == "type_text_chars":
+                return ActionResult(
+                    ok=False,
+                    action=name,
+                    message="unknown tool: type_text_chars",
+                )
+            if name == "type_text":
+                return ActionResult(ok=True, action=name, message="typed via fallback")
+            raise AssertionError(f"Unexpected tool call: {name}")
+
+        backend._action = fake_action
+
+        result = CuaDriverBackend.type_text(backend, "hello")
+
+        assert calls == [
+            ("type_text_chars", {"pid": 123, "text": "hello"}),
+            ("type_text", {"pid": 123, "text": "hello"}),
+        ]
+        assert result.ok is True
+        assert result.action == "type_text"
+        assert result.message == "typed via fallback"
+
+
 class TestUniversality:
     def test_schema_is_valid_openai_function_schema(self):
         """The schema must be round-trippable as a standard OpenAI tool definition."""

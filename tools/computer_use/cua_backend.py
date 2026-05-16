@@ -534,10 +534,13 @@ class CuaDriverBackend(ComputerUseBackend):
         if pid is None:
             return ActionResult(ok=False, action="type_text",
                                 message="No active window — call capture() first.")
-        # Safari WebKit AXTextField does not accept AX attribute writes (type_text),
-        # so use type_text_chars which synthesises individual key events instead.
-        # This works universally across all macOS apps in background mode.
-        return self._action("type_text_chars", {"pid": pid, "text": text})
+        # Prefer type_text_chars (synthesises individual key events, works
+        # universally including Safari WebKit AXTextFields).  Fall back to
+        # type_text if the MCP server does not expose the tool.
+        result = self._action("type_text_chars", {"pid": pid, "text": text})
+        if not result.ok and "unknown tool" in (result.message or "").lower():
+            result = self._action("type_text", {"pid": pid, "text": text})
+        return result
 
     def key(self, keys: str) -> ActionResult:
         pid = self._active_pid
