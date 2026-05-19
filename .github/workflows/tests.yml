@@ -2,11 +2,25 @@ name: Tests
 
 on:
   push:
+    paths:
+      - '**.py'
+      - 'requirements*.txt'
+      - 'pyproject.toml'
+      - '.github/workflows/*.yml'
+      - '.github/workflows/*.yaml'
+      - 'scripts/**'
     branches: [main]
     paths-ignore:
       - '**/*.md'
       - 'docs/**'
   pull_request:
+    paths:
+      - '**.py'
+      - 'requirements*.txt'
+      - 'pyproject.toml'
+      - '.github/workflows/*.yml'
+      - '.github/workflows/*.yaml'
+      - 'scripts/**'
     branches: [main]
     paths-ignore:
       - '**/*.md'
@@ -16,6 +30,8 @@ permissions:
   contents: read
 
 # Cancel in-progress runs for the same PR/branch
+  workflow_dispatch:
+
 concurrency:
   group: tests-${{ github.ref }}
   cancel-in-progress: true
